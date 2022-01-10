@@ -33,7 +33,7 @@ const (
 	SortDescending      = "desc"
 	AuthCodespace       = "auth"
 	sep                 = "/"
-	maxPerPage          = 1000
+	maxPerPage          = 100000
 	AnteHandlerMaxError = 10
 )
 
