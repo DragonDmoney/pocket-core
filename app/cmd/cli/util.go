@@ -97,6 +97,11 @@ var decodeTxCmd = &cobra.Command{
 		if legacy == "true" || legacy == "t" {
 			height = 0
 		}
+		stdTx, err := app.UnmarshalTxStr(txStr, height)
+		if err != nil {
+			fmt.Println("an error occurred unmarshalling the transaction string", err.Error())
+			return
+		}
 		stdTx := app.UnmarshalTxStr(txStr, height)
 
 		j, err := json.Marshal(stdTx.GetMsg())
