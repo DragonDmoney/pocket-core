@@ -5,12 +5,18 @@ import (
 	"github.com/pokt-network/pocket-core/x/pocketcore/types"
 	"os"
 	"strconv"
+	
+	"encoding/json"
+	"encoding/hex"
+	"encoding/base64"
+	"crypto/sha256"
 
 	"github.com/pokt-network/pocket-core/app"
 	"github.com/spf13/cobra"
 	"github.com/tendermint/tendermint/libs/log"
 	"github.com/tendermint/tendermint/state"
 )
+
 
 func init() {
 	rootCmd.AddCommand(utilCmd)
@@ -121,13 +127,13 @@ var decodeTxCmd = &cobra.Command{
 		if jsonOutput == "true" {
 			fmt.Printf(
 				`{"hash": "%s", "type":"%s", "msg":%v, "amount": "%s", "fee": "%s", "entropy":%d, "memo": "%s", "signer": "%s", "receiver": "%s", "sig": "%s"}`,
-				shaStr, stdTx.GetMsg().Type(), string(j), "idk", stdTx.GetFee().String(), stdTx.GetEntropy(), stdTx.GetMemo(), stdTx.GetMsg().GetSigner().String(), stdTx.GetMsg().GetRecipient().String(), stdTx.GetSignature().GetPublicKey())
+				shaStr, stdTx.GetMsg().Type(), string(j), "idk", stdTx.GetFee().String(), stdTx.GetEntropy(), stdTx.GetMemo(), stdTx.GetMsg().GetSigners()[0].String(), stdTx.GetMsg().GetRecipient().String(), stdTx.GetSignature().GetPublicKey())
 			fmt.Printf("\n")
 
 		} else {
 			fmt.Printf(
 				"Type:\t\t%s\nMsg:\t\t%v\nFee:\t\t%s\nEntropy:\t%d\nMemo:\t\t%s\nSigner\t\t%s\nSig:\t\t%s\n",
-				stdTx.GetMsg().Type(), j, stdTx.GetFee().String(), stdTx.GetEntropy(), stdTx.GetMemo(), stdTx.GetMsg().GetSigner().String(),
+				stdTx.GetMsg().Type(), j, stdTx.GetFee().String(), stdTx.GetEntropy(), stdTx.GetMemo(), stdTx.GetMsg().GetSigners()[0].String(),
 				stdTx.GetSignature().GetPublicKey())
 		}
 	},
