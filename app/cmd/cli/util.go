@@ -6,6 +6,11 @@ import (
 	"os"
 	"strconv"
 
+	"encoding/json"
+	"encoding/hex"
+	"encoding/base64"
+	"crypto/sha256"
+
 	"github.com/pokt-network/pocket-core/app"
 	"github.com/spf13/cobra"
 	"github.com/tendermint/tendermint/libs/log"
@@ -78,14 +83,15 @@ var printDefaultConfigCmd = &cobra.Command{
 }
 
 var decodeTxCmd = &cobra.Command{
-	Use:   "decode-tx <tx> <legacyCodec>",
+	Use:   "decode-tx <tx> <legacyCodec> <jsonOutput>",
 	Short: "Decodes a given transaction encoded in Amino/Proto base64 bytes",
 	Long:  `Decodes a given transaction encoded in Amino/Proto base64 bytes`,
-	Args:  cobra.ExactArgs(2),
+	Args:  cobra.ExactArgs(3),
 	Run: func(cmd *cobra.Command, args []string) {
 		app.InitConfig(datadir, tmNode, persistentPeers, seeds, remoteCLIURL)
 		txStr := args[0]
 		legacy := args[1]
+		jsonOutput := args[2]
 		height := int64(-1)
 		if legacy == "true" || legacy == "t" {
 			height = 0
@@ -95,10 +101,40 @@ var decodeTxCmd = &cobra.Command{
 			fmt.Println("an error occurred unmarshalling the transaction string", err.Error())
 			return
 		}
-		fmt.Printf(
-			"Type:\t\t%s\nMsg:\t\t%v\nFee:\t\t%s\nEntropy:\t%d\nMemo:\t\t%s\nSigners\t\t%v\nSig:\t\t%s\n",
-			stdTx.GetMsg().Type(), stdTx.GetMsg(), stdTx.GetFee().String(), stdTx.GetEntropy(), stdTx.GetMemo(), stdTx.GetMsg().GetSigners(),
-			stdTx.GetSignature().GetPublicKey())
+
+		j, err := json.Marshal(stdTx.GetMsg())
+
+		if err != nil {
+			fmt.Printf("Error: %s", err.Error())
+		}
+
+		p, err := base64.StdEncoding.DecodeString(txStr)
+		if err != nil {
+			fmt.Printf("Error: %s", err.Error())
+		}
+		hexStr := hex.EncodeToString(p)
+		// fmt.Printf("raw hex: %s", hexStr)
+
+		content, _:=hex.DecodeString(hexStr)
+
+		h := sha256.New()
+		h.Write(content)
+		sha := h.Sum(nil)  // "sha" is uint8 type, encoded in base16
+
+		shaStr := hex.EncodeToString(sha)  // String representation
+
+		if jsonOutput == "true" {
+			fmt.Printf(
+				`{"hash": "%s", "type":"%s", "msg":%v, "amount": "%s", "fee": "%s", "entropy":%d, "memo": "%s", "signer": "%s", "receiver": "%s", "sig": "%s"}`,
+				shaStr, stdTx.GetMsg().Type(), string(j), "idk", stdTx.GetFee().String(), stdTx.GetEntropy(), stdTx.GetMemo(), stdTx.GetMsg().GetSigners()[0].String(), stdTx.GetMsg().GetRecipient().String(), stdTx.GetSignature().GetPublicKey())
+			fmt.Printf("\n")
+
+		} else {
+			fmt.Printf(
+				"Type:\t\t%s\nMsg:\t\t%v\nFee:\t\t%s\nEntropy:\t%d\nMemo:\t\t%s\nSigner\t\t%s\nSig:\t\t%s\n",
+				stdTx.GetMsg().Type(), j, stdTx.GetFee().String(), stdTx.GetEntropy(), stdTx.GetMemo(), stdTx.GetMsg().GetSigners()[0].String(),
+				stdTx.GetSignature().GetPublicKey())
+		}
 	},
 }
 
